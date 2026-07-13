@@ -11,7 +11,7 @@ from pypdf import PdfReader
 load_dotenv(override=True)
 app = FastAPI()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
+# hey what 
 vector_index = None
 stored_chunks = []
 
