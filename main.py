@@ -15,7 +15,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 vector_index = None
 stored_chunks = []
-
+#dfsdfsf
 
 @app.post("/files")
 async def upload_file(file: UploadFile = File()):
