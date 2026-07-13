@@ -8,6 +8,7 @@ from fastapi import FastAPI, File, UploadFile
 from typing import Annotated
 from pypdf import PdfReader
 
+#practice
 load_dotenv(override=True)
 app = FastAPI()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
