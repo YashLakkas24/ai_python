@@ -7,15 +7,14 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, File, UploadFile
 from typing import Annotated
 from pypdf import PdfReader
-
+ 
 load_dotenv(override=True)
 app = FastAPI()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # vokeaydfs
 vector_index = None
-stored_chunks = []
-
+stored_chunks = [] 
 
 @app.post("/files")
 async def upload_file(file: UploadFile = File()):
