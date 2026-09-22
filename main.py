@@ -4,7 +4,7 @@ import faiss
 from pydantic import BaseModel
 from openai import OpenAI
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, HTTPException
 from typing import Annotated
 from pypdf import PdfReader
 
@@ -12,7 +12,6 @@ load_dotenv(override=True)
 app = FastAPI()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# vokeaydfs
 vector_index = None
 stored_chunks = []
 
@@ -26,13 +25,22 @@ async def upload_file(file: UploadFile = File()):
         f.write(contents)
 
     reader = PdfReader(file.filename)
-    full_text = ""
+    pages = []
     for pg_no, page in enumerate(reader.pages, start=1):
         text = page.extract_text()
 
-        full_text += text + "\n"
-    stored_chunks = split_text(full_text)
+        if text is None or not text.strip():
+            print(f"Warning: Page {pg_no} contains no extarctable text.Skipping.")
+            continue
+
+        pages.append({"text": text, "page_number": pg_no})
+
+    if not pages:
+        raise HTTPException(status_code=400, detail="No text found.")
+
+    stored_chunks = split_text(pages, file.filename)
     vector_index, stored_chunks = store_embeddings(stored_chunks)
+    print("VECTOR INDEX:", vector_index)
     return {"filename": file.filename, "chunks": len(stored_chunks)}
 
 
@@ -54,10 +62,10 @@ async def ask_question(request: AskRequest):
         if idx != -1:
             relevant_chunks.append(stored_chunks[idx])
 
-    context = "\n\n".join(relevant_chunks)
+    context = "\n\n".join(chunk["text"] for chunk in relevant_chunks)
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-nano",
         messages=[
             {
                 "role": "system",
@@ -72,15 +80,23 @@ async def ask_question(request: AskRequest):
     return {"answer": response.choices[0].message.content}
 
 
-def split_text(text: str, chunk_size: int = 500, overlap: int = 100):
+def split_text(pages, source, chunk_size=500, overlap=100):
     chunks = []
-    start = 0
 
-    while start < len(text):
-        end = start + chunk_size
-        chunk = text[start:end]
-        chunks.append(chunk)
-        start += chunk_size - overlap
+    for page in pages:
+        text = page["text"]
+        page_number = page["page_number"]
+
+        start = 0
+
+        while start < len(text):
+            end = start + chunk_size
+            chunk_text = text[start:end]
+
+            chunks.append(
+                {"text": chunk_text, "source": source, "page_number": page_number}
+            )
+            start += chunk_size - overlap
 
     return chunks
 
@@ -89,7 +105,13 @@ def store_embeddings(chunks: list[str]):
     embeddings = []
 
     for chunk in chunks:
-        response = client.embeddings.create(input=chunk, model="text-embedding-3-small")
+        print("CHUNK:", chunk)
+        print("TEXT:", chunk["text"])
+        print("TEXT TYPE:", type(chunk["text"]))
+
+        response = client.embeddings.create(
+            input=chunk["text"], model="text-embedding-3-small"
+        )
         embedding = response.data[0].embedding
         embeddings.append(embedding)
 
