@@ -3,10 +3,8 @@ import os
 import numpy as np
 from openai import OpenAI
 from dotenv import load_dotenv
-from fastapi import FastAPI
 
 load_dotenv(override=True)
-app = FastAPI()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
