@@ -6,14 +6,16 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from pypdf import PdfReader
 from app.ingestion import split_text
-from embeddings import store_embeddings
+from app.embeddings import store_embeddings
+from app.retrieval import retrieve_chunks
 
 load_dotenv(override=True)
 app = FastAPI()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 vector_index = None
-stored_chunks = [] 
+stored_chunks = []
+
 
 @app.post("/files")
 async def upload_file(file: UploadFile = File()):
@@ -60,33 +62,8 @@ class AskRequest(BaseModel):
 
 @app.post("/ask")
 async def ask_question(request: AskRequest):
-    question_embedding = client.embeddings.create(
-        input=request.question, model="text-embedding-3-small"
-    )
-    embedding = question_embedding.data[0].embedding
-    question_np = np.array([embedding]).astype("float32")
+    question = request.question
 
-    distances, indices = vector_index.search(question_np, k=3)
+    relevant_chunks = retrieve_chunks(question)
 
-    relevant_chunks = []
-
-    for idx in indices[0]:
-        if idx != -1:
-            relevant_chunks.append(stored_chunks[idx])
-
-    context = "\n\n".join(chunk["text"] for chunk in relevant_chunks)
-
-    response = client.chat.completions.create(
-        model="gpt-5-nano",
-        messages=[
-            {
-                "role": "system",
-                "content": "Answer questions based only on the provided context.",
-            },
-            {
-                "role": "user",
-                "content": f"Context:\n{context}\n\nQuestion:{request.question}",
-            },
-        ],
-    )
-    return {"answer": response.choices[0].message.content}
+    return relevant_chunks
