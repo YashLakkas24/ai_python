@@ -1,13 +1,17 @@
 import os
 import numpy as np
-import faiss
-from pydantic import BaseModel
 from openai import OpenAI
+from pydantic import BaseModel
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, UploadFile, HTTPException
-from typing import Annotated
 from pypdf import PdfReader
+<<<<<<< HEAD:main.py
  
+=======
+from app.ingestion import split_text
+from embeddings import store_embeddings
+
+>>>>>>> 93c29a4 (separating files):app/main.py
 load_dotenv(override=True)
 app = FastAPI()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -24,23 +28,34 @@ async def upload_file(file: UploadFile = File()):
         f.write(contents)
 
     reader = PdfReader(file.filename)
-    pages = []
+
+    full_text = ""
+    page_boundaries = []
+
     for pg_no, page in enumerate(reader.pages, start=1):
         text = page.extract_text()
 
         if text is None or not text.strip():
-            print(f"Warning: Page {pg_no} contains no extarctable text.Skipping.")
+            print(f"Warning: Page {pg_no} contains no extractable text.Skipping.")
             continue
 
-        pages.append({"text": text, "page_number": pg_no})
+        text = text.strip()
 
-    if not pages:
+        page_boundaries.append((pg_no, len(full_text)))
+
+        full_text += text + "\n"
+
+    if not full_text.strip():
         raise HTTPException(status_code=400, detail="No text found.")
 
-    stored_chunks = split_text(pages, file.filename)
+    stored_chunks = split_text(full_text, page_boundaries, file.filename)
     vector_index, stored_chunks = store_embeddings(stored_chunks)
-    print("VECTOR INDEX:", vector_index)
-    return {"filename": file.filename, "chunks": len(stored_chunks)}
+
+    return {
+        "filename": file.filename,
+        "chunks": len(stored_chunks),
+        "page_boundaries": page_boundaries,
+    }
 
 
 class AskRequest(BaseModel):
@@ -54,7 +69,9 @@ async def ask_question(request: AskRequest):
     )
     embedding = question_embedding.data[0].embedding
     question_np = np.array([embedding]).astype("float32")
+
     distances, indices = vector_index.search(question_np, k=3)
+
     relevant_chunks = []
 
     for idx in indices[0]:
@@ -77,47 +94,3 @@ async def ask_question(request: AskRequest):
         ],
     )
     return {"answer": response.choices[0].message.content}
-
-
-def split_text(pages, source, chunk_size=500, overlap=100):
-    chunks = []
-
-    for page in pages:
-        text = page["text"]
-        page_number = page["page_number"]
-
-        start = 0
-
-        while start < len(text):
-            end = start + chunk_size
-            chunk_text = text[start:end]
-
-            chunks.append(
-                {"text": chunk_text, "source": source, "page_number": page_number}
-            )
-            start += chunk_size - overlap
-
-    return chunks
-
-
-def store_embeddings(chunks: list[str]):
-    embeddings = []
-
-    for chunk in chunks:
-        print("CHUNK:", chunk)
-        print("TEXT:", chunk["text"])
-        print("TEXT TYPE:", type(chunk["text"]))
-
-        response = client.embeddings.create(
-            input=chunk["text"], model="text-embedding-3-small"
-        )
-        embedding = response.data[0].embedding
-        embeddings.append(embedding)
-
-    embeddings_np = np.array(embeddings).astype("float32")
-    dimension = len(embeddings[0])
-    index = faiss.IndexFlatL2(dimension)
-
-    index.add(embeddings_np)
-
-    return index, chunks
