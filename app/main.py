@@ -5,13 +5,9 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from pypdf import PdfReader
-<<<<<<< HEAD:main.py
- 
-=======
 from app.ingestion import split_text
 from embeddings import store_embeddings
 
->>>>>>> 93c29a4 (separating files):app/main.py
 load_dotenv(override=True)
 app = FastAPI()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
