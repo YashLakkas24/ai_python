@@ -8,7 +8,8 @@ load_dotenv(override=True)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
-def store_embeddings(chunks: list[dict]):
+def generate_embeddings(chunks: list[dict]):
+
     embeddings = []
 
     for chunk in chunks:
@@ -19,10 +20,4 @@ def store_embeddings(chunks: list[dict]):
         embedding = response.data[0].embedding
         embeddings.append(embedding)
 
-    embeddings_np = np.array(embeddings).astype("float32")
-    dimension = len(embeddings[0])
-    index = faiss.IndexFlatL2(dimension)
-
-    index.add(embeddings_np)
-
-    return index, chunks
+    return embeddings

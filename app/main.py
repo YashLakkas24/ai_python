@@ -11,20 +11,17 @@ load_dotenv(override=True)
 app = FastAPI()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-vector_index = None
-stored_chunks = []
-
 
 @app.post("/files")
 async def upload_file(file: UploadFile = File()):
-    global vector_index, stored_chunks
 
-    vector_index, stored_chunks, page_boundaries = extract_text(file)
+    chunks, page_boundaries, store_result = extract_text(file)
 
     return {
         "filename": file.filename,
-        "chunks": len(stored_chunks),
+        "chunks": len(chunks),
         "page_boundaries": page_boundaries,
+        "store_result": store_result,
     }
 
 

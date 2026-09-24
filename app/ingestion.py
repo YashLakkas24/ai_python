@@ -2,11 +2,13 @@ from bisect import bisect_right
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from pypdf import PdfReader
 
-from app.embeddings import store_embeddings
+from app.embeddings import generate_embeddings
+from app.vector_store import store_chunks
 
 
 async def extract_text(file: File):
     contents = await file.read()
+
     with open(file.filename, "wb") as f:
         f.write(contents)
     reader = PdfReader(file.filename)
@@ -30,10 +32,11 @@ async def extract_text(file: File):
     if not full_text.strip():
         raise HTTPException(status_code=400, detail="No text found.")
 
-    stored_chunks = split_text(full_text, page_boundaries, file.filename)
-    vector_index, stored_chunks = store_embeddings(stored_chunks)
+    chunks = split_text(full_text, page_boundaries, file.filename)
+    embeddings = generate_embeddings(chunks)
 
-    return stored_chunks, vector_index, page_boundaries
+    store_result = store_chunks(chunks, embeddings)
+    return chunks, page_boundaries, store_result
 
 
 def split_text(
