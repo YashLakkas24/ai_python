@@ -1,12 +1,12 @@
 from bisect import bisect_right
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import UploadFile, HTTPException
 from pypdf import PdfReader
 
 from app.embeddings import generate_embeddings
 from app.vector_store import store_chunks
 
 
-async def extract_text(file: File):
+async def extract_text(file: UploadFile):
     contents = await file.read()
 
     with open(file.filename, "wb") as f:

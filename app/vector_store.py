@@ -9,6 +9,7 @@ stored_chunks = []
 def store_chunks(chunks: list[dict], embeddings: list[list[float]]):
     global vector_index, stored_chunks
 
+    stored_chunks = chunks
     embeddings_np = np.array(embeddings).astype("float32")
 
     dimension = len(embeddings[0])
@@ -19,10 +20,10 @@ def store_chunks(chunks: list[dict], embeddings: list[list[float]]):
     return {"chunks_stored": len(chunks), "vector_count": vector_index.ntotal}
 
 
-def search_similar(query_embedding: list[float], top_k: int = 3) -> list[dict]:
+def search_similar(query_embedding: list[float], k: int = 3) -> list[dict]:
 
     if vector_index is None or vector_index.ntotal == 0:
-        return {"answer": "Vector index is empty or not initialized."}
+        return []
 
     query_np = np.array([query_embedding]).astype("float32")
 
