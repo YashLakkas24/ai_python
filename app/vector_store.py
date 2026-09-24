@@ -35,7 +35,7 @@ def search_similar(query_embedding: list[float], k: int = 3) -> list[dict]:
 
     for distance, index in zip(distances[0], indices[0]):
         if index != -1:
-            chunk = store_chunks[index].copy()
+            chunk = stored_chunks[index].copy()
 
             chunk["distance"] = float(distance)
             relevant_chunks.append(chunk)
