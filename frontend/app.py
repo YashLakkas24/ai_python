@@ -22,6 +22,7 @@ if uploaded_file:
                     st.error(response.json().get("detail", "Upload failed"))
             except requests.RequestException as e:
                 st.error(f"Could not connect to backend: {e}")
+
 question = st.text_input("Ask a question")
 
 if st.button("Ask"):

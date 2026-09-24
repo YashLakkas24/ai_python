@@ -20,7 +20,7 @@ async def extract_text(file: UploadFile):
         text = page.extract_text()
 
         if text is None or not text.strip():
-            print(f"Warning: Page {pg_no} contains no extractable text.Skipping.")
+            print(f"Warning: Page {pg_no} contains no extractable text. Skipping.")
             continue
 
         text = text.strip()

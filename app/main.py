@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from fastapi import FastAPI, File, UploadFile
 from app.retrieval import retrieve_chunks
+from app.generation import generate_answer
 from app.ingestion import extract_text
 
 app = FastAPI()
@@ -29,4 +30,5 @@ async def ask_question(request: AskRequest):
 
     relevant_chunks = retrieve_chunks(question)
 
-    return relevant_chunks
+    answer = generate_answer(question, relevant_chunks)
+    return {"answer": answer, "sources": relevant_chunks}
