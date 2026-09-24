@@ -38,4 +38,4 @@ def generate_answer(question: str, relevant_chunks: list[dict]) -> str:
         ],
     )
 
-    return response.choice[0].message.content
+    return response.choices[0].message.content
