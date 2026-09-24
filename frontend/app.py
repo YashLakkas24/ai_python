@@ -11,17 +11,17 @@ if uploaded_file:
             "file": (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)
         }
 
-    with st.spinner("Processing PDF..."):
-        try:
-            response = requests.post("http://127.0.0.1:8000/files", files=files)
+        with st.spinner("Processing PDF..."):
+            try:
+                response = requests.post("http://127.0.0.1:8000/files", files=files)
 
-            if response.status_code == 200:
-                st.success("Uploaded Successfully")
-                st.json(response.json())
-            else:
-                st.error(response.json().get("detail", "Upload failed"))
-        except Exception as e:
-            st.error(f"Could not connect to backend: {e}")
+                if response.status_code == 200:
+                    st.success("Uploaded Successfully")
+                    st.json(response.json())
+                else:
+                    st.error(response.json().get("detail", "Upload failed"))
+            except requests.RequestException as e:
+                st.error(f"Could not connect to backend: {e}")
 question = st.text_input("Ask a question")
 
 if st.button("Ask"):
