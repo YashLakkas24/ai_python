@@ -15,7 +15,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 @app.post("/files")
 async def upload_file(file: UploadFile = File()):
 
-    chunks, page_boundaries, store_result = extract_text(file)
+    chunks, page_boundaries, store_result =await extract_text(file)
 
     return {
         "filename": file.filename,
